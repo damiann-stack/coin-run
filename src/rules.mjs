@@ -9,3 +9,13 @@ export const RULES = {
   runTtlMs: 30 * 60 * 1000,   // a started run must be finished within 30 minutes
   maxOpenRuns: 3,
 };
+
+// The practice Level 30 prize: free shipping plus one free Embroidered Patch,
+// as two single-use codes that only the winner's account can use.
+export const PRIZE = {
+  level: 29,                                                   // practice level index (Level 30)
+  giftVariant: 'gid://shopify/ProductVariant/68249134760173',  // Embroidered Patches
+  giftName: 'Embroidered Patch',
+  runTtlMs: 60 * 60 * 1000,                                    // a started Level 30 run must be sent within an hour
+  maxOpenRuns: 3,
+};

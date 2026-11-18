@@ -4,5 +4,5 @@
   "type": "module",
   "description": "Counts coins for Crown Coin Run and gives the store credit reward.",
   "engines": { "node": ">=20" },
-  "scripts": { "start": "node server.mjs", "test": "node test/test.mjs && node test/worker-test.mjs" }
+  "scripts": { "start": "node server.mjs", "test": "node test/test.mjs && node test/prize-test.mjs && node test/worker-test.mjs" }
 }

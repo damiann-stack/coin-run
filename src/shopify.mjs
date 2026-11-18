@@ -56,6 +56,25 @@ export function shopifyStore({ shop, clientId, clientSecret, fetchImpl = fetch }
       if (p.userErrors.length) throw new Error(p.userErrors.map(e => e.message).join('; '));
       return { txId: p.storeCreditAccountTransaction?.id || '' };
     },
+    // Makes the two prize codes. Both work once, only for this customer, and can be used together.
+    async makePrize(customerId, { giftVariant, shipCode, giftCode }) {
+      const v = await gql(`query($id: ID!) { productVariant(id: $id) { price } }`, { id: giftVariant });
+      const price = v.productVariant?.price;
+      if (!price) throw new Error('gift product not found');
+      const who = { customers: { add: [gid(customerId)] } };
+      const d = await gql(`mutation($s: DiscountCodeFreeShippingInput!, $g: DiscountCodeBasicInput!) {
+        s: discountCodeFreeShippingCreate(freeShippingCodeDiscount: $s) { codeDiscountNode { id } userErrors { field message } }
+        g: discountCodeBasicCreate(basicCodeDiscount: $g) { codeDiscountNode { id } userErrors { field message } } }`, {
+        s: { title: `Coin Run Level 30 free shipping (${shipCode})`, code: shipCode, startsAt: new Date().toISOString(), context: who,
+          usageLimit: 1, appliesOncePerCustomer: true, destination: { all: true }, combinesWith: { productDiscounts: true, orderDiscounts: true } },
+        g: { title: `Coin Run Level 30 free gift (${giftCode})`, code: giftCode, startsAt: new Date().toISOString(), context: who,
+          usageLimit: 1, appliesOncePerCustomer: true, combinesWith: { shippingDiscounts: true },
+          customerGets: { items: { products: { productVariantsToAdd: [giftVariant] } }, value: { discountAmount: { amount: price, appliesOnEachItem: false } } } },
+      });
+      const errs = [...d.s.userErrors, ...d.g.userErrors];
+      if (errs.length) throw new Error(errs.map(e => e.message).join('; '));
+      return { shipCode, giftCode };
+    },
   };
 }
 
@@ -72,5 +91,7 @@ export function memoryStore() {
     },
     async hasPriorReward(id, amount) { return credits.some(c => c.id === id && c.amount === amount); },
     async credit(id, amount, currency) { credits.push({ id, amount, currency }); return { txId: `tx${credits.length}` }; },
+    prizes: [], failPrize: false,
+    async makePrize(id, p) { if (this.failPrize) throw new Error('down'); this.prizes.push({ id, ...p }); return { shipCode: p.shipCode, giftCode: p.giftCode }; },
   };
 }

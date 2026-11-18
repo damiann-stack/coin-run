@@ -21,11 +21,6 @@ export default {
     try {
       if (!env.SHOPIFY_SHOP || !env.SHOPIFY_CLIENT_ID || !env.SHOPIFY_CLIENT_SECRET) throw new Error('missing settings');
       const u = new URL(request.url);
-      if (u.pathname.endsWith('/settings-check')) {
-        const sec = String(env.SHOPIFY_CLIENT_SECRET), id = String(env.SHOPIFY_CLIENT_ID);
-        out = { status: 200, json: { secretLooksRight: sec.trim().startsWith('shpss_'), secretSameAsClientId: sec.trim() === id.trim(), clientIdLooksRight: /^[0-9a-f]{32}$/.test(id.trim()), extraSpaces: sec !== sec.trim() || id !== id.trim() } };
-        return new Response(JSON.stringify(out.json), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-      }
       out = await getApp(env).handle({ method: request.method, url: u.pathname + u.search, body: request.method === 'POST' ? await request.text() : '' });
     } catch (e) {
       console.error(e);

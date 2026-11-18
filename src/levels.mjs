@@ -153,3 +153,71 @@ function level4() {
 }
 
 export const LEVELS = [level1(), level2(), level3(), level4()];
+
+// ---------- practice levels 1 to 30 ----------
+// Level 1 is the tutorial. Levels 2 to 30 are built from the same pieces with a
+// fixed random seed per level, so the game and the coin counter build identical
+// maps. Difficulty climbs gently: longer levels, wider pits and more kinds of
+// pieces, topping out near Level 3 above. Levels 10 and 20 are shadow chases.
+function practiceRng(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
+function practiceLevel(n) {
+  if (n === 1) return { ...level1(), name: 'Level 1' };
+  const d = (n - 2) / 28;
+  const r = practiceRng(0x5eed + n * 7919);
+  const ri = (a, z) => a + Math.floor(r() * (z - a + 1));
+  const chase = n === 10 || n === 20;
+  const name = n === 30 ? 'Level 30 · The Empty Tomb' : chase ? `Level ${n} · Shadow Chase` : `Level ${n}`;
+  const b = new Builder(name);
+  b.ground(14, { coins: true }); b.put(3, b.g - 1, 'P');
+  if (chase) { b.put(7, b.g - 1, 'B'); b.hint(5, b.g - 7, 'The shadow is coming. Grab the Bible, turn around and press F for Angel Fire.'); }
+  const pool = ['pit', 'step', 'flat', 'pit'];
+  if (n >= 3) pool.push('well');
+  if (n >= 4) pool.push('thorns');
+  if (n >= 6) pool.push('branch');
+  if (n >= 8) pool.push('cliff');
+  if (n >= 9) pool.push('drop');
+  if (n >= 14) pool.push('pits');
+  if (n >= 18) pool.push('wells');
+  const segs = 5 + Math.round(d * 11);
+  // Level 30 is a set finale that uses every piece once or twice.
+  const finale = ['pit', 'well', 'flat', 'thorns', 'branch', 'pits', 'cliff', 'drop', 'wells', 'step', 'pits', 'cliff', 'thorns', 'drop', 'well', 'pit'];
+  let since = 0, last = '';
+  for (let i = 0; i < segs; i++) {
+    let p = pool[Math.floor(r() * pool.length)];
+    if (p === last) p = pool[Math.floor(r() * pool.length)];
+    if (n === 30) p = finale[i % finale.length];
+    const rise = Math.min(7, 5 + Math.round(d * 2)), fall = Math.min(7, 4 + Math.round(d * 3));
+    if (p === 'cliff' && b.g - rise < 10) p = 'drop';
+    if (p === 'drop' && b.g + fall > 18) p = b.g - rise >= 10 && n >= 8 ? 'cliff' : 'flat';
+    if (p === 'branch' && b.g < 13) p = 'pit';
+    last = p;
+    const pw = Math.max(2, Math.min(5, 2 + Math.round(d * 2.6 + r() * 0.9)));
+    switch (p) {
+      case 'pit': b.pit(pw); b.ground(ri(5, 9), { coins: true }); break;
+      case 'step': b.ground(4); b.step(b.x - 2, d > 0.4 ? 2 : 1); b.ground(ri(5, 8), { coins: true }); break;
+      case 'flat': b.ground(ri(8, 12), { coins: true }); break;
+      case 'well': b.ground(3); b.well(3, Math.min(7, 5 + Math.round(d * 2))); b.ground(ri(5, 8), { coins: true }); break;
+      case 'thorns': b.ground(ri(6, 9), { coins: true }); b.thorns(b.x - 4, d > 0.5 ? 2 : 1); b.ground(3); break;
+      case 'branch': b.branch(ri(18, 24), { item: r() < 0.6 ? 'B' : '', thorns: d > 0.3 }); break;
+      case 'cliff': b.cliff(rise, ri(8, 10)); break;
+      case 'drop': b.drop(fall, ri(8, 10)); break;
+      case 'pits': b.pit(pw); b.ground(3); b.pit(pw); b.ground(ri(5, 7), { coins: true }); break;
+      case 'wells': b.ground(3); b.well(3, 7); b.ground(3); b.well(3, 7); b.ground(ri(5, 7), { coins: true }); break;
+    }
+    if (++since >= 3 && i < segs - 1) {
+      b.ground(4); b.checkpoint(b.x - 2); since = 0;
+      if (chase) b.put(b.x - 1, b.g - 1, 'B');
+    }
+  }
+  b.ground(4);
+  b.tomb();
+  return b.build(chase ? { chase: true, limitSeconds: 300 } : {});
+}
+
+export const PRACTICE_LEVELS = Array.from({ length: 30 }, (_, i) => practiceLevel(i + 1));
+export const PRIZE_LEVEL = 29;
