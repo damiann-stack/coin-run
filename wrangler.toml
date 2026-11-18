@@ -4,6 +4,6 @@ compatibility_date = "2026-11-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-SHOPIFY_SHOP = "crownsandcrossesco.myshopify.com"
+SHOPIFY_SHOP = "8wirft-zf.myshopify.com"
 # OWNER_CUSTOMER_IDS = ""   # customer IDs with unlimited runs, comma separated
 # SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET are added as secrets in the Cloudflare dashboard, never here.
